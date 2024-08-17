@@ -143,6 +143,12 @@ header.exception {
 }
 
 /* Heading */
+header.exception small a.stackoverflow {
+  font-weight: 100;
+  font-size: 10pt;
+  color: grey;
+}
+
 header.exception .fix-actions {
     margin-top: .5em;
 }

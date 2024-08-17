@@ -84,11 +84,24 @@ module BetterErrors
     end
 
     def protected_app_call(env)
+      # Hold any existing error outside the instance that it's not going to pollute the `#inspect` of this instance
+      # while the app is being called. Once the app returns, restore the original error so that it is still available
+      # to Better Errors. If a new error is raised during the call, it be stored replacing the old one.
+      #
+      # FIXME: wrap this (and therefore all application requests) in a mutex.
+      # This will have strange results in a multithreaded environment. Either the second thread will clear
+      # the error state, or another thread request that rescues an exception will be overwritten by a slower
+      # request finishing after it.
+      Thread.current[:better_errors_previous_error_page] = @error_page
+      @error_page = nil
       @app.call env
+      @error_page = Thread.current[:better_errors_previous_error_page]
     rescue Exception => ex
       @error_page = @handler.new ex, env
       log_exception
       show_error_page(env, ex)
+    ensure
+      Thread.current[:better_errors_previous_error_page] = nil
     end
 
     def show_error_page(env, exception=nil)
@@ -169,11 +182,11 @@ module BetterErrors
       request = Rack::Request.new(env)
       return invalid_csrf_token_json_response unless request.cookies[CSRF_TOKEN_COOKIE_NAME]
 
-      request.body.rewind
+      request.body.rewind if defined?(request.body.rewind)
       body = JSON.parse(request.body.read)
       return invalid_csrf_token_json_response unless request.cookies[CSRF_TOKEN_COOKIE_NAME] == body['csrfToken']
 
-      return not_acceptable_json_response unless request.content_type == 'application/json'
+      return not_acceptable_json_response unless request.media_type == 'application/json'
 
       response = @error_page.send("do_#{method}", body)
       [200, { "Content-Type" => "application/json; charset=utf-8" }, [JSON.dump(response)]]

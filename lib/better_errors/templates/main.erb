@@ -3,6 +3,7 @@
 <head>
     <title><%= exception_type %> at <%= request_path %></title>
     <link rel="icon" href="data:;base64,=" />
+    <meta name="turbo-visit-control" content="reload" />
 </head>
 <body class="better-errors-javascript-not-loaded">
     <%# Stylesheets are placed in the <body> for Turbolinks compatibility. %>
@@ -76,6 +77,11 @@
             <% if exception_hint %>
               <h2>Hint: <%= exception_hint %></h2>
             <% end %>
+            <div>
+              <small>
+                <a class="stackoverflow" href="https://stackoverflow.com/search?q=%5Bruby-on-rails%5D+<%= exception_type %>+<%= exception_message %>" target="_blank" rel="noopener">Search on Stack Overflow</a>
+              </small>
+            </div>
         </header>
     </div>
 
